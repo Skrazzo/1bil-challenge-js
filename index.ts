@@ -12,8 +12,6 @@ interface StationData {
 
 type StationMap = Map<string, StationData>;
 
-const measurements = await Bun.file("./generate/small.txt").text();
-
 let Stations: StationMap = new Map();
 
 function getMeasurement(line: string): Measurement | null {
@@ -34,10 +32,13 @@ function getMeasurement(line: string): Measurement | null {
 }
 
 function processChunk(chunk: string[]) {
-    // Get measurements
-    const measurements = chunk.map(getMeasurement).filter((m) => m !== null);
+    // Go through each line
+    for (const line of chunk) {
+        const measurement = getMeasurement(line);
+        if (!measurement) continue;
 
-    for (const { station, temp } of measurements) {
+        const { station, temp } = measurement;
+
         // Get data if it exists
         const data = Stations.get(station);
         if (!data) {
@@ -57,7 +58,29 @@ function processChunk(chunk: string[]) {
     }
 }
 
-processChunk(measurements.split("\n"));
+// Open file, and prepare decoder
+const measurements = Bun.file("./generate/medium.txt");
+const decoder = new TextDecoder();
+
+// last buffer, to fix incomplete lines
+let lastBuffer = "";
+
+// Start streaming file
+for await (const chunk of measurements.stream()) {
+    const newText = decoder.decode(chunk, { stream: true });
+
+    // Combine last buffer with new text
+    const text = lastBuffer + newText;
+    const arr = text.split("\n");
+
+    // Remove last line, potentially incomplete
+    lastBuffer = arr.pop() || "";
+
+    processChunk(arr);
+}
+
+// Handle last buffer
+processChunk([lastBuffer]);
 
 // Sort, and then output, calculate average if needed
 [...Stations.entries()]
