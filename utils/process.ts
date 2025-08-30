@@ -12,7 +12,7 @@ export function getMeasurement(line: string): Measurement | null {
     }
 
     return {
-        station,
+        station: station.trim(),
         temp: parseFloat(temp),
     };
 }

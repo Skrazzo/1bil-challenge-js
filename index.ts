@@ -7,6 +7,11 @@ let Stations: StationMap = new Map();
 export async function processFile(path: string) {
     // Open file, and prepare decoder
     const measurements = Bun.file(path);
+    if (!(await measurements.exists())) {
+        console.log("File does not exist!");
+        process.exit(1);
+    }
+
     const decoder = new TextDecoder();
 
     // last buffer, to fix incomplete lines
@@ -37,5 +42,5 @@ export async function processFile(path: string) {
 
 if (import.meta.main) {
     // If being called via console
-    await processFile("./generate/medium.txt");
+    await processFile(process.argv[2] || "./generate/medium.txt");
 }
